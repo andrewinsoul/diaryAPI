@@ -3,7 +3,7 @@ defmodule DiaryAPI.Repo.Migrations.CreateDiaries do
 
   def change do
     create table(:diaries, primary_key: false) do
-      add :diary_id, :id, primary_key: true
+      add :diary_id, :bigserial, primary_key: true
       add :name, :string
       add :image, :string
       add :description, :string

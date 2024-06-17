@@ -36,6 +36,11 @@ config :logger, :console,
   format: "$time $metadata[$level] $message\n",
   metadata: [:request_id]
 
+# Configure guardian
+config :diaryAPI, DiaryAPI.Guardian,
+  issuer: "diaryAPI",
+  secret_key: "Ck1oyeW+x6dQ0PfwUnXeUwbG/K4hAKVl"
+
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
