@@ -3,7 +3,7 @@ defmodule DiaryAPI.Repo.Migrations.CreateUsers do
 
   def change do
     create table(:users, primary_key: false) do
-      add :user_id, :id, primary_key: true
+      add :user_id, :bigserial, primary_key: true
       add :email, :string
       add :password_hash, :string
       add :firstname, :string

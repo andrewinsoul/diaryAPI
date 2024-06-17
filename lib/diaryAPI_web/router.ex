@@ -1,12 +1,18 @@
 defmodule DiaryAPIWeb.Router do
   use DiaryAPIWeb, :router
+  alias DiaryAPI.Guardian
 
   pipeline :api do
     plug :accepts, ["json"]
   end
 
-  scope "/api", DiaryAPIWeb do
+  pipeline :jwt_authenticated do
+    plug Guardian.AuthPipeline
+  end
+
+  scope "/api/v1", DiaryAPIWeb do
     pipe_through :api
+    post "/register", UserController, :create
   end
 
   # Enable Swoosh mailbox preview in development
