@@ -11,14 +11,14 @@ defmodule DiaryAPIWeb.EntryController do
     render(conn, :index, entries: entries)
   end
 
-  def create(conn, %{"entry" => entry_params}) do
-    with {:ok, %Entry{} = entry} <- Entries.create_entry(entry_params) do
-      conn
-      |> put_status(:created)
-      |> put_resp_header("location", ~p"/api/entries/#{entry}")
-      |> render(:show, entry: entry)
-    end
-  end
+  # def create(conn, %{"entry" => entry_params}) do
+  #   with {:ok, %Entry{} = entry} <- Entries.create_entry(entry_params) do
+  #     conn
+  #     |> put_status(:created)
+  #     |> put_resp_header("location", ~p"/api/entries/#{entry}")
+  #     |> render(:show, entry: entry)
+  #   end
+  # end
 
   def show(conn, %{"id" => id}) do
     entry = Entries.get_entry!(id)

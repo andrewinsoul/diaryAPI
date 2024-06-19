@@ -13,6 +13,7 @@ defmodule DiaryAPIWeb.Router do
   scope "/api/v1", DiaryAPIWeb do
     pipe_through :api
     post "/register", UserController, :create
+    post "/login", UserController, :login
   end
 
   # Enable Swoosh mailbox preview in development

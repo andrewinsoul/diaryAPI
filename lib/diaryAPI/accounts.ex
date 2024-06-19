@@ -7,6 +7,9 @@ defmodule DiaryAPI.Accounts do
   alias DiaryAPI.Repo
 
   alias DiaryAPI.Accounts.User
+  alias DiaryAPI.Guardian
+
+  import Bcrypt, only: [verify_pass: 2, no_user_verify: 0]
 
   @doc """
   Returns the list of users.
@@ -19,6 +22,41 @@ defmodule DiaryAPI.Accounts do
   """
   def list_users do
     Repo.all(User)
+  end
+
+  defp get_by_email_or_username(identity) when is_binary(identity) do
+    query = from u in User,
+          where: u.email == ^identity or u.username == ^identity
+    case Repo.one(query) do
+      nil ->
+        no_user_verify()
+        {:error, "Login error."}
+
+      user ->
+        {:ok, user}
+    end
+  end
+
+  defp verify_password(password, user_data) when is_binary(password) do
+    if verify_pass(password, user_data.password_hash) do
+      {:ok, user_data}
+    else
+      {:error, :invalid_password}
+    end
+  end
+
+  defp email_password_auth(email, password) when is_binary(email) and is_binary(password) do
+    with {:ok, user} <- get_by_email_or_username(email),
+    do: verify_password(password, user)
+  end
+
+  def token_sign_in(email, password) do
+    case email_password_auth(email, password) do
+      {:ok, user} ->
+        Guardian.encode_and_sign(user)
+      _ ->
+        {:error, :unauthorized}
+    end
   end
 
   @doc """

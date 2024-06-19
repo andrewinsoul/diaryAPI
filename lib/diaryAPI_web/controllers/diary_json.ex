@@ -17,7 +17,7 @@ defmodule DiaryAPIWeb.DiaryJSON do
 
   defp data(%Diary{} = diary) do
     %{
-      id: diary.id,
+      id: diary.diary_id,
       name: diary.name,
       image: diary.image,
       description: diary.description
