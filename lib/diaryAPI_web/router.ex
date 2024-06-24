@@ -10,6 +10,13 @@ defmodule DiaryAPIWeb.Router do
     plug Guardian.AuthPipeline
   end
 
+  scope "/auth", DiaryAPIWeb do
+    pipe_through :api
+
+    get "/:provider", UserController, :request
+    get "/:provider/callback", UserController, :callback
+  end
+
   scope "/api/v1", DiaryAPIWeb do
     pipe_through :api
     post "/register", UserController, :create

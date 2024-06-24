@@ -25,7 +25,7 @@ defmodule DiaryAPI.Accounts.User do
   def changeset(user, attrs) do
     user
     |> cast(attrs, [:email, :password, :firstname, :lastname, :username])
-    |> validate_required([:email, :password, :firstname, :lastname, :username])
+    |> validate_required([:email, :firstname, :lastname, :username])
     |> unique_constraint(:username)
     |> unique_constraint(:email)
     |> validate_format(:email, ~r/^[A-Za-z0-9\._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}$/)

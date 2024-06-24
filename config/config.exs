@@ -39,6 +39,22 @@ config :logger, :console,
 # Filter logs to log to the console
 config :phoenix, :filter_parameters, ["password", "secret", "token"]
 
+# configure ueberauth and initialize idps supported by the application
+config :ueberauth, Ueberauth,
+  providers: [
+    # instagram: {Ueberauth.Strategy.Facebook},
+    # twitter: {Ueberauth.Strategy.Github},
+    google:
+      {Ueberauth.Strategy.Google,
+       [
+         default_scope: "email profile"
+       ]}
+  ]
+
+config :ueberauth, Ueberauth.Strategy.Google.OAuth,
+  client_id: System.get_env("GOOGLE_CLIENT_ID"),
+  client_secret: System.get_env("GOOGLE_CLIENT_SECRET")
+
 # Configure guardian
 config :diaryAPI, DiaryAPI.Guardian,
   issuer: "diaryAPI",

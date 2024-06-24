@@ -25,8 +25,10 @@ defmodule DiaryAPI.Accounts do
   end
 
   defp get_by_email_or_username(identity) when is_binary(identity) do
-    query = from u in User,
-          where: u.email == ^identity or u.username == ^identity
+    query =
+      from u in User,
+        where: u.email == ^identity or u.username == ^identity
+
     case Repo.one(query) do
       nil ->
         no_user_verify()
@@ -47,15 +49,35 @@ defmodule DiaryAPI.Accounts do
 
   defp email_password_auth(email, password) when is_binary(email) and is_binary(password) do
     with {:ok, user} <- get_by_email_or_username(email),
-    do: verify_password(password, user)
+         do: verify_password(password, user)
   end
 
   def token_sign_in(email, password) do
     case email_password_auth(email, password) do
       {:ok, user} ->
         Guardian.encode_and_sign(user)
+
       _ ->
         {:error, :unauthorized}
+    end
+  end
+
+  def findOrCreate(user_data) do
+    %{
+      email: email,
+      username: username
+    } = user_data
+
+    query =
+      from u in User,
+        where: u.email == ^email or u.username == ^username
+
+    if Repo.one(query) == nil do
+      user_data_changeset = create_user(user_data)
+      Guardian.encode_and_sign(user_data_changeset)
+    else
+      user_info = Repo.get_by(User, email: email)
+      Guardian.encode_and_sign(user_info)
     end
   end
 
