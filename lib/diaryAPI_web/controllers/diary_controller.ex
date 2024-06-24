@@ -11,15 +11,6 @@ defmodule DiaryAPIWeb.DiaryController do
     render(conn, :index, diaries: diaries)
   end
 
-  def create(conn, %{"diary" => diary_params}) do
-    with {:ok, %Diary{} = diary} <- Diaries.create_diary(diary_params) do
-      conn
-      |> put_status(:created)
-      |> put_resp_header("location", ~p"/api/diaries/#{diary}")
-      |> render(:show, diary: diary)
-    end
-  end
-
   def show(conn, %{"id" => id}) do
     diary = Diaries.get_diary!(id)
     render(conn, :show, diary: diary)

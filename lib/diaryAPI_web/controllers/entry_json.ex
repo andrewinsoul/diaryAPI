@@ -17,7 +17,7 @@ defmodule DiaryAPIWeb.EntryJSON do
 
   defp data(%Entry{} = entry) do
     %{
-      id: entry.id,
+      id: entry.entry_id,
       title: entry.title,
       image: entry.image,
       content: entry.content,
