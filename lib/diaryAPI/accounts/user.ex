@@ -8,7 +8,7 @@ defmodule DiaryAPI.Accounts.User do
   schema "users" do
     field :username, :string
     field :email, :string
-    field :password_hash, :string
+    field :password_hash, :string, redact: true
     field :firstname, :string
     field :lastname, :string
 
