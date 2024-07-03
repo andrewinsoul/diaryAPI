@@ -6,9 +6,13 @@ defmodule DiaryAPIWeb.UserController do
   alias DiaryAPI.Accounts
   alias DiaryAPI.Accounts.User
   alias DiaryAPI.Guardian
+  # alias DiaryAPI.Mailer
+  # alias DiaryAPI.ResetPasswordMail
+  alias DiaryAPIWeb.ParentJSON, as: BaseJSON
 
   action_fallback DiaryAPIWeb.FallbackController
 
+  @spec index(Plug.Conn.t(), any()) :: Plug.Conn.t()
   def index(conn, _params) do
     users = Accounts.list_users()
     render(conn, :index, users: users)
@@ -102,6 +106,102 @@ defmodule DiaryAPIWeb.UserController do
       code: "INVALID",
       error: "Invalid input, identity and password is required"
     })
+  end
+
+  def send_reset_password_mail(conn, %{"identity" => identity}) when is_binary(identity) do
+    with {:ok, %User{} = user} <- Accounts.get_by_email_or_username(identity),
+         {:ok, token, _claims} <- Guardian.encode_and_sign(user, %{}, ttl: {5, :minutes}) do
+      if is_nil(user.password_hash) do
+        conn
+        |> put_status(403)
+        |> json(
+          BaseJSON.show_error(%{
+            code: "NOT OK",
+            error: "you were authenticated through an IDP and as such cannot update password"
+          })
+        )
+      else
+        email = DiaryAPI.ResetPasswordMail.reset_user_password(user, token)
+        DiaryAPI.Mailer.deliver(email)
+
+        conn
+        |> json(%{
+          code: "OK",
+          message:
+            "An email with a link to reset your password will be sent to you if you have an account",
+          token: token
+        })
+      end
+    else
+      {:error, "Login error."} ->
+        conn
+        |> put_status(404)
+        |> json(BaseJSON.show_error(%{error: "user was not found", code: "NOT_FOUND"}))
+
+      _ ->
+        conn
+        |> put_status(500)
+        |> json(BaseJSON.show_error(%{error: "An error occured", code: "SERVER ERROR"}))
+    end
+  end
+
+  def send_reset_password_mail(conn, _user_params) do
+    conn
+    |> put_status(400)
+    |> render(:show_error, %{
+      code: "INVALID",
+      error:
+        "Invalid input, the payload must have identity key and its value can either be your email or your username"
+    })
+  end
+
+  def update_password(conn, %{"password" => password}) when is_binary(password) do
+    user = Guardian.Plug.current_resource(conn)
+
+    case Accounts.update_password(user.email, password) do
+      {:ok, _user_struct} ->
+        conn
+        |> put_status(200)
+        |> json(
+          BaseJSON.show(%{
+            data: %{
+              "message" => "Password update was successful"
+            },
+            code: "OK"
+          })
+        )
+
+      {:error, %Changeset{} = changeset_error} ->
+        conn
+        |> put_status(400)
+        |> json(
+          BaseJSON.show_error(%{
+            error: translate_errors(changeset_error),
+            code: nil
+          })
+        )
+
+      _ ->
+        conn
+        |> put_status(500)
+        |> json(
+          BaseJSON.show_error(%{
+            error: "Internal server error",
+            code: "SERVER ERROR"
+          })
+        )
+    end
+  end
+
+  def update_password(conn, _user_params) do
+    conn
+    |> put_status(400)
+    |> json(
+      BaseJSON.show_error(%{
+        error: "Password is required",
+        code: nil
+      })
+    )
   end
 
   def show(conn, %{"id" => id}) do

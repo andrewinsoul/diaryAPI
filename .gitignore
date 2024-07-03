@@ -27,3 +27,5 @@ diaryAPI-*.tar
 
 # Ignore env files
 *.env
+
+priv/static/*
