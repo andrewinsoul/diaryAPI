@@ -1,7 +1,0 @@
-#!/bin/bash
-
-# Precompile assets
-mix phx.digest
-
-# Deploy to Gigalixir
-gigalixir deploy
