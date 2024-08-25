@@ -10,7 +10,7 @@ defmodule DiaryAPI.Diaries.Diary do
     field :name, :string
     field :description, :string
     field :image, :string
-    belongs_to :user, User, foreign_key: :user_id
+    belongs_to :user, User, foreign_key: :user_id, references: :user_id
     has_many :entries, Entry, foreign_key: :entry_id
 
     timestamps(type: :utc_datetime)

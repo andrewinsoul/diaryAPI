@@ -10,7 +10,7 @@ defmodule DiaryAPI.Entries.Entry do
     field :image, :string
     field :content, :string
     field :is_private, :boolean, default: false
-    belongs_to :diary, Diary, foreign_key: :diary_id
+    belongs_to :diary, Diary, foreign_key: :diary_id, references: :diary_id
 
     timestamps(type: :utc_datetime)
   end
