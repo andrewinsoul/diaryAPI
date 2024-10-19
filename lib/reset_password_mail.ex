@@ -15,7 +15,7 @@ defmodule DiaryAPI.ResetPasswordMail do
   def reset_user_password(%User{} = user, token) do
     new()
     |> from({"Diary One", "andrewinsoul@gmail.com"})
-    |> subject("Change Password")
+    |> subject("Reset Password Instructions")
     |> to({"#{user.firstname} #{user.lastname}", user.email})
     |> render_body("reset_password.html", %{
       name: "#{user.firstname} #{user.lastname}",

@@ -50,7 +50,6 @@ defmodule DiaryAPI.MixProject do
       {:ueberauth, "~> 0.10"},
       {:ueberauth_google, "~> 0.10"},
       {:phoenix_html, "~> 4.1.1"},
-      {:tailwind, "~> 0.1"},
       {:premailex, "~> 0.3.0"}
     ]
   end
@@ -67,10 +66,7 @@ defmodule DiaryAPI.MixProject do
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
-      "assets.deploy": ["cmd --cd assets node build.js --deploy", "phx.digest"],
-      start: ["load_env", "phx.server"],
-      "assets.deploy": ["tailwind default --minify"],
-      "assets.setup": ["tailwind.install --if-missing"]
+      "assets.deploy": ["cmd --cd assets node build.js --deploy", "phx.digest"]
     ]
   end
 end
