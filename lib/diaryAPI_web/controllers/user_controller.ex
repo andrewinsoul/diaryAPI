@@ -54,6 +54,15 @@ defmodule DiaryAPIWeb.UserController do
     with {:ok, token, _claims} <- Accounts.findOrCreate(user_data) do
       conn |> json(%{token: token, code: "OAUTH SUCCESS", redirect_uri: "FRONTEND_URI"})
     else
+      {:code, "METHOD NOT ALLOWED", message: "account cannot authenticate with OAUTH"} ->
+        conn
+        |> put_status(403)
+        |> render(:show_error, %{
+          error:
+            "Account registered with password, reset your password if you cannot recall your password",
+          code: "BAD REQUEST"
+        })
+
       _error ->
         conn
         |> put_status(401)
@@ -75,7 +84,7 @@ defmodule DiaryAPIWeb.UserController do
     })
   end
 
-  def login(conn, %{"email" => email, "password" => password}) do
+  def login(conn, %{"identity" => email, "password" => password}) do
     with {:ok, token, _claims} <- Accounts.token_sign_in(email, password) do
       conn |> render(:show, %{token: token, code: "LOGIN"})
     else
@@ -91,7 +100,7 @@ defmodule DiaryAPIWeb.UserController do
     |> put_status(400)
     |> render(:show_error, %{
       code: "INVALID",
-      error: "Invalid input, email and password is required"
+      error: "Invalid input, identity and password is required"
     })
   end
 

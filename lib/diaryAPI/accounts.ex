@@ -72,12 +72,18 @@ defmodule DiaryAPI.Accounts do
       from u in User,
         where: u.email == ^email or u.username == ^username
 
-    if Repo.one(query) == nil do
+    data_query_result = Repo.one(query)
+
+    if data_query_result == nil do
       user_data_changeset = create_user(user_data)
       Guardian.encode_and_sign(user_data_changeset)
     else
-      user_info = Repo.get_by(User, email: email)
-      Guardian.encode_and_sign(user_info)
+      if data_query_result.password == nil do
+        {:code, "METHOD NOT ALLOWED", message: "account cannot authenticate with OAUTH"}
+      else
+        user_info = Repo.get_by(User, email: email)
+        Guardian.encode_and_sign(user_info)
+      end
     end
   end
 
