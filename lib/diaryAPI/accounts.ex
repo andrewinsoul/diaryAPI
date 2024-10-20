@@ -9,7 +9,7 @@ defmodule DiaryAPI.Accounts do
   alias DiaryAPI.Accounts.User
   alias DiaryAPI.Guardian
 
-  import Bcrypt, only: [verify_pass: 2, no_user_verify: 0]
+  import Bcrypt, only: [verify_pass: 2, no_user_verify: 0, hash_pwd_salt: 1]
 
   @doc """
   Returns the list of users.
@@ -24,7 +24,7 @@ defmodule DiaryAPI.Accounts do
     Repo.all(User)
   end
 
-  defp get_by_email_or_username(identity) when is_binary(identity) do
+  def get_by_email_or_username(identity) when is_binary(identity) do
     query =
       from u in User,
         where: u.email == ^identity or u.username == ^identity
@@ -36,6 +36,14 @@ defmodule DiaryAPI.Accounts do
 
       user ->
         {:ok, user}
+    end
+  end
+
+  def update_password(identity, password) when is_binary(identity) and is_binary(password) do
+    case get_by_email_or_username(identity) do
+      {:ok, user} ->
+        new_user_info = Ecto.Changeset.change(user, password_hash: hash_pwd_salt(password))
+        Repo.update(new_user_info)
     end
   end
 

@@ -33,6 +33,7 @@ defmodule DiaryAPI.MixProject do
   defp deps do
     [
       {:phoenix, "~> 1.7.12"},
+      {:phoenix_swoosh, "~> 1.0"},
       {:phoenix_ecto, "~> 4.4"},
       {:ecto_sql, "~> 3.10"},
       {:postgrex, ">= 0.0.0"},
@@ -47,7 +48,9 @@ defmodule DiaryAPI.MixProject do
       {:bcrypt_elixir, "~> 3.0"},
       {:guardian, "~> 2.3.2"},
       {:ueberauth, "~> 0.10"},
-      {:ueberauth_google, "~> 0.10"}
+      {:ueberauth_google, "~> 0.10"},
+      {:phoenix_html, "~> 4.1.1"},
+      {:premailex, "~> 0.3.0"}
     ]
   end
 

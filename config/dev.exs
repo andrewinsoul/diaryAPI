@@ -30,8 +30,7 @@ config :diaryAPI, DiaryAPIWeb.Endpoint,
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
-  secret_key_base: "qKjHZxVwUtCin5eAdujxL0AKOMgRLelPqeVqAi8Mn0ib0aEbxWC77zqTRZGLK45f",
-  watchers: []
+  secret_key_base: "qKjHZxVwUtCin5eAdujxL0AKOMgRLelPqeVqAi8Mn0ib0aEbxWC77zqTRZGLK45f"
 
 # ## SSL Support
 #
