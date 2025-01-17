@@ -50,7 +50,11 @@ defmodule DiaryAPI.MixProject do
       {:ueberauth, "~> 0.10"},
       {:ueberauth_google, "~> 0.10"},
       {:phoenix_html, "~> 4.1.1"},
-      {:premailex, "~> 0.3.0"}
+      {:premailex, "~> 0.3.0"},
+      {:plug, "~> 1.12"},
+      {:plug_cowboy, "~> 2.0"},
+      {:multipart, "~> 0.4"},
+      {:hackney, "~> 1.18.0"}
     ]
   end
 
