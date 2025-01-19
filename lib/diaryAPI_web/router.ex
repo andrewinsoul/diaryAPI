@@ -29,6 +29,7 @@ defmodule DiaryAPIWeb.Router do
     put "/update/password", UserController, :update_password
     post "/add/diary", DiaryController, :create
     patch "/update/diary/:id", DiaryController, :update
+    delete "/delete/diary/:id", DiaryController, :delete
   end
 
   # Enable Swoosh mailbox preview in development

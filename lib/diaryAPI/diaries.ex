@@ -4,6 +4,7 @@ defmodule DiaryAPI.Diaries do
   """
 
   import Ecto.Query, warn: false
+  import DiaryAPIWeb.Utils, only: [filter_out_soft_delete_col: 1]
   alias DiaryAPI.Repo
 
   alias DiaryAPI.Diaries.Diary
@@ -38,16 +39,20 @@ defmodule DiaryAPI.Diaries do
   def get_diary(id), do: Repo.get(Diary, id)
 
   def get_my_diary_by_id(id, user_id) do
-    Diary
+    filter_out_soft_delete_col(Diary)
     |> where([diary], diary.user_id == ^user_id)
     |> where([diary], diary.diary_id == ^id)
     |> Repo.one()
   end
 
-  def get_diary_by_name(name), do: Repo.get_by(Diary, name: name)
+  def get_diary_by_name(name) do
+    filter_out_soft_delete_col(Diary)
+    |> where([diary], diary.name == ^name)
+    |> Repo.all()
+  end
 
   def get_diary_by_desc(desc_pattern) do
-    Diary
+    filter_out_soft_delete_col(Diary)
     |> where([diary], ilike(diary.description, ^desc_pattern))
     |> Repo.all()
   end
@@ -89,7 +94,7 @@ defmodule DiaryAPI.Diaries do
   end
 
   @doc """
-  Deletes a diary.
+  Soft deletes a diary by updating the deleted_at column.
 
   ## Examples
 
@@ -101,19 +106,15 @@ defmodule DiaryAPI.Diaries do
 
   """
   def delete_diary(%Diary{} = diary) do
-    Repo.delete(diary)
-  end
+    changeset =
+      Ecto.Changeset.change(diary,
+        deleted_at:
+          NaiveDateTime.truncate(
+            NaiveDateTime.utc_now(),
+            :second
+          )
+      )
 
-  @doc """
-  Returns an `%Ecto.Changeset{}` for tracking diary changes.
-
-  ## Examples
-
-      iex> change_diary(diary)
-      %Ecto.Changeset{data: %Diary{}}
-
-  """
-  def change_diary(%Diary{} = diary, attrs \\ %{}) do
-    Diary.changeset(diary, attrs)
+    Repo.update(changeset)
   end
 end

@@ -2,17 +2,18 @@ defmodule DiaryAPIWeb.UserController do
   use DiaryAPIWeb, :controller
   plug Ueberauth
 
+  alias DiaryAPIWeb.ResponseCodes
   alias Ecto.Changeset
   alias DiaryAPI.Accounts
   alias DiaryAPI.Accounts.User
   alias DiaryAPI.Guardian
-  # alias DiaryAPI.Mailer
-  # alias DiaryAPI.ResetPasswordMail
   alias DiaryAPIWeb.ParentJSON, as: BaseJSON
 
   import DiaryAPIWeb.Utils
 
   action_fallback DiaryAPIWeb.FallbackController
+
+  @response_codes ResponseCodes.response_codes_mapper()
 
   @spec index(Plug.Conn.t(), any()) :: Plug.Conn.t()
   def index(conn, _params) do
@@ -30,17 +31,20 @@ defmodule DiaryAPIWeb.UserController do
            {:ok, token, _claims} <- Guardian.encode_and_sign(user) do
         conn
         |> put_status(201)
-        |> render(:show, %{token: token, code: "CREATED"})
+        |> render(:show, %{token: token, code: @response_codes.created})
       else
         {:error, %Changeset{} = changeset} ->
           conn
           |> put_status(:unprocessable_entity)
-          |> render(:show_error, %{error: translate_errors(changeset), code: "INVALID_INPUT"})
+          |> render(:show_error, %{
+            error: translate_errors(changeset),
+            code: @response_codes.invalid
+          })
 
         _ ->
           conn
           |> put_status(500)
-          |> render(:show_error, %{code: "INTERNAL SERVER ERROR"})
+          |> render(:show_error, %{code: @response_codes.server_error})
       end
     end
   end
@@ -92,12 +96,15 @@ defmodule DiaryAPIWeb.UserController do
 
   def login(conn, %{"identity" => email, "password" => password}) do
     with {:ok, token, _claims} <- Accounts.token_sign_in(email, password) do
-      conn |> render(:show, %{token: token, code: "LOGIN"})
+      conn |> render(:show, %{token: token, code: @response_codes.ok})
     else
       _ ->
         conn
         |> put_status(401)
-        |> render(:show_error, %{error: "wrong credentials supplied", code: "AUTH FAILED"})
+        |> render(:show_error, %{
+          error: "wrong credentials supplied",
+          code: @response_codes.unauthorized
+        })
     end
   end
 
@@ -118,7 +125,7 @@ defmodule DiaryAPIWeb.UserController do
         |> put_status(403)
         |> json(
           BaseJSON.show_error(%{
-            code: "NOT OK",
+            code: @response_codes.forbidden,
             error: "you were authenticated through an IDP and as such cannot update password"
           })
         )
@@ -128,7 +135,7 @@ defmodule DiaryAPIWeb.UserController do
 
         conn
         |> json(%{
-          code: "OK",
+          code: @response_codes.ok,
           message:
             "An email with a link to reset your password will be sent to you if you have an account",
           token: token
@@ -138,12 +145,16 @@ defmodule DiaryAPIWeb.UserController do
       {:error, "Login error."} ->
         conn
         |> put_status(404)
-        |> json(BaseJSON.show_error(%{error: "user was not found", code: "NOT_FOUND"}))
+        |> json(
+          BaseJSON.show_error(%{error: "user was not found", code: @response_codes.not_found})
+        )
 
       _ ->
         conn
         |> put_status(500)
-        |> json(BaseJSON.show_error(%{error: "An error occured", code: "SERVER ERROR"}))
+        |> json(
+          BaseJSON.show_error(%{error: "An error occured", code: @response_codes.server_error})
+        )
     end
   end
 
@@ -151,7 +162,7 @@ defmodule DiaryAPIWeb.UserController do
     conn
     |> put_status(400)
     |> render(:show_error, %{
-      code: "INVALID",
+      code: @response_codes.invalid,
       error:
         "Invalid input, the payload must have identity key and its value can either be your email or your username"
     })
@@ -169,7 +180,7 @@ defmodule DiaryAPIWeb.UserController do
             data: %{
               "message" => "Password update was successful"
             },
-            code: "OK"
+            code: @response_codes.ok
           })
         )
 
@@ -179,7 +190,7 @@ defmodule DiaryAPIWeb.UserController do
         |> json(
           BaseJSON.show_error(%{
             error: translate_errors(changeset_error),
-            code: nil
+            code: @response_codes.invalid
           })
         )
 
@@ -189,7 +200,7 @@ defmodule DiaryAPIWeb.UserController do
         |> json(
           BaseJSON.show_error(%{
             error: "Internal server error",
-            code: "SERVER ERROR"
+            code: @response_codes.server_error
           })
         )
     end
@@ -201,7 +212,7 @@ defmodule DiaryAPIWeb.UserController do
     |> json(
       BaseJSON.show_error(%{
         error: "Password is required",
-        code: nil
+        code: @response_codes.invalid
       })
     )
   end
