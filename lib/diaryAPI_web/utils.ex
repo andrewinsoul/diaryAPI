@@ -14,6 +14,10 @@ defmodule DiaryAPIWeb.Utils do
     |> String.replace("Bearer ", "")
   end
 
+  def decode_token(token) do
+    DiaryAPI.Guardian.decode_and_verify(token)
+  end
+
   def filter_out_soft_delete_col(query) do
     query |> where([q], is_nil(q.deleted_at))
   end

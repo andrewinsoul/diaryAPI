@@ -1,6 +1,7 @@
 defmodule DiaryAPIWeb.DiaryController do
   use DiaryAPIWeb, :controller
 
+  import DiaryAPIWeb.Utils, only: [get_token: 1, decode_token: 1]
   alias Ecto.Changeset
   alias DiaryAPI.Diaries
   alias DiaryAPI.Diaries.Diary
@@ -11,21 +12,15 @@ defmodule DiaryAPIWeb.DiaryController do
   @response_codes ResponseCodes.response_codes_mapper()
 
   def create(conn, payload) do
-    token = DiaryAPIWeb.Utils.get_token(conn)
+    token = get_token(conn)
 
-    with {:ok, user, _claims} <- DiaryAPI.Guardian.resource_from_token(token),
+    with {:ok, claims} <- decode_token(token),
          {:ok, data} <-
-           Diaries.create_diary(Map.put(payload, "user_id", user.user_id)) do
+           Diaries.create_diary(Map.put(payload, "user_id", claims["sub"])) do
       conn
       |> put_status(200)
       |> render(:show,
-        diary: %{
-          diary_id: data.diary_id,
-          name: data.name,
-          description: data.description,
-          image: data.image,
-          user_id: data.user_id
-        },
+        diary: data,
         code: @response_codes.created
       )
     else
@@ -84,10 +79,10 @@ defmodule DiaryAPIWeb.DiaryController do
   end
 
   def fetch_my_diaries(conn, _params) do
-    token = DiaryAPIWeb.Utils.get_token(conn)
+    token = get_token(conn)
 
-    with {:ok, user, _claims} <- DiaryAPI.Guardian.resource_from_token(token),
-         diaries <- Diaries.get_my_diaries(user.user_id) do
+    with {:ok, claims} <- decode_token(token),
+         diaries <- Diaries.get_my_diaries(claims["sub"]) do
       conn
       |> put_status(200)
       |> render(:index, diaries: diaries)
@@ -123,12 +118,12 @@ defmodule DiaryAPIWeb.DiaryController do
   # end
 
   def update(conn, %{"id" => id}) do
-    token = DiaryAPIWeb.Utils.get_token(conn)
+    token = get_token(conn)
     diary_params = conn.body_params
 
-    with {:ok, user, _claims} <- DiaryAPI.Guardian.resource_from_token(token),
+    with {:ok, claims} <- decode_token(token),
          %Diary{} = diary <-
-           Diaries.get_my_diary_by_id(id, user.user_id),
+           Diaries.get_my_diary_by_id(id, claims["sub"]),
          {:ok, %Diary{} = updated_diary} <-
            Diaries.update_diary(diary, diary_params) do
       conn
@@ -193,11 +188,11 @@ defmodule DiaryAPIWeb.DiaryController do
   end
 
   def delete(conn, %{"id" => id}) do
-    token = DiaryAPIWeb.Utils.get_token(conn)
+    token = get_token(conn)
 
-    with {:ok, user, _claims} <- DiaryAPI.Guardian.resource_from_token(token),
+    with {:ok, claims} <- decode_token(token),
          %Diary{} = diary <-
-           Diaries.get_my_diary_by_id(id, user.user_id),
+           Diaries.get_my_diary_by_id(id, claims["sub"]),
          {:ok, _} <-
            Diaries.delete_diary(diary) do
       conn
