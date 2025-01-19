@@ -35,7 +35,22 @@ defmodule DiaryAPI.Diaries do
       ** (Ecto.NoResultsError)
 
   """
-  def get_diary!(id), do: Repo.get!(Diary, id)
+  def get_diary(id), do: Repo.get(Diary, id)
+
+  def get_my_diary_by_id(id, user_id) do
+    Diary
+    |> where([diary], diary.user_id == ^user_id)
+    |> where([diary], diary.diary_id == ^id)
+    |> Repo.one()
+  end
+
+  def get_diary_by_name(name), do: Repo.get_by(Diary, name: name)
+
+  def get_diary_by_desc(desc_pattern) do
+    Diary
+    |> where([diary], ilike(diary.description, ^desc_pattern))
+    |> Repo.all()
+  end
 
   @doc """
   Creates a diary.

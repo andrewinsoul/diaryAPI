@@ -19,8 +19,9 @@ defmodule DiaryAPI.Diaries.Diary do
   @doc false
   def changeset(diary, attrs) do
     diary
-    |> cast(attrs, [:name, :image, :description])
+    |> cast(attrs, [:name, :image, :description, :user_id])
     |> validate_required([:name, :description])
     |> unique_constraint(:user_diary_unique, name: :user_diary_unique_index)
+    # |> foreign_key_constraint(:user_id)
   end
 end

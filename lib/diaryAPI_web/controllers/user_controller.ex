@@ -10,6 +10,8 @@ defmodule DiaryAPIWeb.UserController do
   # alias DiaryAPI.ResetPasswordMail
   alias DiaryAPIWeb.ParentJSON, as: BaseJSON
 
+  import DiaryAPIWeb.Utils
+
   action_fallback DiaryAPIWeb.FallbackController
 
   @spec index(Plug.Conn.t(), any()) :: Plug.Conn.t()
@@ -223,11 +225,5 @@ defmodule DiaryAPIWeb.UserController do
     with {:ok, %User{}} <- Accounts.delete_user(user) do
       send_resp(conn, :no_content, "")
     end
-  end
-
-  defp translate_errors(changeset) do
-    Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
-      Gettext.dgettext(DiaryAPIWeb.Gettext, "errors", msg, opts)
-    end)
   end
 end

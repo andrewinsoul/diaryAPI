@@ -27,6 +27,8 @@ defmodule DiaryAPIWeb.Router do
   scope "/api/v1", DiaryAPIWeb do
     pipe_through [:api, :jwt_authenticated]
     put "/update/password", UserController, :update_password
+    post "/add/diary", DiaryController, :create
+    patch "/update/diary/:id", DiaryController, :update
   end
 
   # Enable Swoosh mailbox preview in development

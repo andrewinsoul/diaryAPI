@@ -1,5 +1,6 @@
 defmodule DiaryAPIWeb.DiaryJSON do
   alias DiaryAPI.Diaries.Diary
+  alias DiaryAPIWeb.ParentJSON
 
   @doc """
   Renders a list of diaries.
@@ -14,6 +15,8 @@ defmodule DiaryAPIWeb.DiaryJSON do
   def show(%{diary: diary}) do
     %{data: data(diary)}
   end
+
+  def show_error(%{error: error, code: code}), do: ParentJSON.show_error(%{error: error, code: code})
 
   defp data(%Diary{} = diary) do
     %{
