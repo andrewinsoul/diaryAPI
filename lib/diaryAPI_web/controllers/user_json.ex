@@ -15,7 +15,11 @@ defmodule DiaryAPIWeb.UserJSON do
 
   def show(%{token: token, code: code}), do: ParentJSON.show(%{data: %{token: token}, code: code})
 
-  def show_error(%{error: error, code: code}), do: ParentJSON.show_error(%{error: error, code: code})
+  def oauth_show(%{token: token, redirect_uri: redirect_uri}),
+    do: ParentJSON.show(%{data: %{token: token}, code: "OK", redirect_uri: redirect_uri})
+
+  def show_error(%{error: error, code: code}),
+    do: ParentJSON.show_error(%{error: error, code: code})
 
   defp data(%User{} = user) do
     %{

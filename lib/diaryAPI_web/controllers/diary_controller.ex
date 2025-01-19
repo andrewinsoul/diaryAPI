@@ -5,7 +5,6 @@ defmodule DiaryAPIWeb.DiaryController do
   alias DiaryAPI.Diaries
   alias DiaryAPI.Diaries.Diary
   alias DiaryAPIWeb.ResponseCodes
-  alias DiaryAPIWeb.ParentJSON, as: BaseJSON
 
   action_fallback DiaryAPIWeb.FallbackController
 
@@ -19,17 +18,15 @@ defmodule DiaryAPIWeb.DiaryController do
            Diaries.create_diary(Map.put(payload, "user_id", user.user_id)) do
       conn
       |> put_status(200)
-      |> json(
-        BaseJSON.show(%{
-          data: %{
-            diary_id: data.diary_id,
-            name: data.name,
-            description: data.description,
-            image: data.image,
-            user_id: data.user_id
-          },
-          code: @response_codes.created
-        })
+      |> render(:show,
+        diary: %{
+          diary_id: data.diary_id,
+          name: data.name,
+          description: data.description,
+          image: data.image,
+          user_id: data.user_id
+        },
+        code: @response_codes.created
       )
     else
       {:error,
@@ -42,51 +39,41 @@ defmodule DiaryAPIWeb.DiaryController do
        }} ->
         conn
         |> put_status(409)
-        |> json(
-          BaseJSON.show_error(%{
-            error: "you already have a diary with that name",
-            code: @response_codes.duplicate
-          })
+        |> render(:show_error,
+          error: "you already have a diary with that name",
+          code: @response_codes.duplicate
         )
 
       {:error, %Changeset{} = changeset} ->
         conn
         |> put_status(:unprocessable_entity)
-        |> json(
-          BaseJSON.show_error(%{
-            error: DiaryAPIWeb.Utils.translate_errors(changeset),
-            code: @response_codes.invalid
-          })
+        |> render(:show_error,
+          error: DiaryAPIWeb.Utils.translate_errors(changeset),
+          code: @response_codes.invalid
         )
 
       {:error, :token_expired} ->
         conn
         |> put_status(401)
-        |> json(
-          BaseJSON.show_error(%{
-            error: "Token expired",
-            code: @response_codes.unauthenticated
-          })
+        |> render(:show_error,
+          error: "Token expired",
+          code: @response_codes.unauthenticated
         )
 
       {:error, :invalid_token} ->
         conn
         |> put_status(401)
-        |> json(
-          BaseJSON.show_error(%{
-            error: "Invalid token",
-            code: @response_codes.unauthenticated
-          })
+        |> render(:show_error,
+          error: "Token expired",
+          code: @response_codes.unauthenticated
         )
 
       err ->
         conn
         |> put_status(500)
-        |> json(
-          BaseJSON.show_error(%{
-            error: err,
-            code: @response_codes.server_error
-          })
+        |> render(:show_error,
+          error: err,
+          code: @response_codes.server_error
         )
     end
   end
@@ -95,6 +82,45 @@ defmodule DiaryAPIWeb.DiaryController do
     diary = Diaries.get_diary(id)
     render(conn, :show, diary: diary)
   end
+
+  def fetch_my_diaries(conn, _params) do
+    token = DiaryAPIWeb.Utils.get_token(conn)
+
+    with {:ok, user, _claims} <- DiaryAPI.Guardian.resource_from_token(token),
+         diaries <- Diaries.get_my_diaries(user.user_id) do
+      conn
+      |> put_status(200)
+      |> render(:index, diaries: diaries)
+    else
+      err ->
+        conn
+        |> put_status(500)
+        |> render(:show_error,
+          error: err,
+          code: @response_codes.server_error
+        )
+    end
+  end
+
+  def fetch_diaries(conn, _params) do
+    diaries = Diaries.get_diaries()
+
+    if diaries do
+      conn
+      |> put_status(200)
+      |> render(:index, diaries: diaries)
+    else
+      conn
+      |> put_status(500)
+      |> render(:show_error,
+        error: "can not fetch diaries at this moment, try again!",
+        code: @response_codes.server_error
+      )
+    end
+  end
+
+  # def fetch_diaries(conn) do
+  # end
 
   def update(conn, %{"id" => id}) do
     token = DiaryAPIWeb.Utils.get_token(conn)
@@ -107,18 +133,7 @@ defmodule DiaryAPIWeb.DiaryController do
            Diaries.update_diary(diary, diary_params) do
       conn
       |> put_status(200)
-      |> json(
-        BaseJSON.show(%{
-          data: %{
-            diary_id: updated_diary.diary_id,
-            name: updated_diary.name,
-            description: updated_diary.description,
-            image: updated_diary.image,
-            user_id: updated_diary.user_id
-          },
-          code: @response_codes.updated
-        })
-      )
+      |> render(:show, diary: updated_diary, code: @response_codes.updated)
     else
       {:error,
        %Changeset{} = %Ecto.Changeset{
@@ -130,61 +145,49 @@ defmodule DiaryAPIWeb.DiaryController do
        }} ->
         conn
         |> put_status(409)
-        |> json(
-          BaseJSON.show_error(%{
-            error: "you already have a diary with that name",
-            code: @response_codes.duplicate
-          })
+        |> render(:show_error,
+          error: "you already have a diary with that name",
+          code: @response_codes.duplicate
         )
 
       {:error, %Changeset{} = changeset} ->
         conn
         |> put_status(:unprocessable_entity)
-        |> json(
-          BaseJSON.show_error(%{
-            error: DiaryAPIWeb.Utils.translate_errors(changeset),
-            code: @response_codes.invalid
-          })
+        |> render(:show_error,
+          error: DiaryAPIWeb.Utils.translate_errors(changeset),
+          code: @response_codes.invalid
         )
 
       {:error, :token_expired} ->
         conn
         |> put_status(401)
-        |> json(
-          BaseJSON.show_error(%{
-            error: "Token expired",
-            code: @response_codes.unauthenticated
-          })
+        |> render(:show_error,
+          error: "Token expired",
+          code: @response_codes.unauthenticated
         )
 
       {:error, :invalid_token} ->
         conn
         |> put_status(401)
-        |> json(
-          BaseJSON.show_error(%{
-            error: "Invalid token",
-            code: @response_codes.unauthenticated
-          })
+        |> render(:show_error,
+          error: "Invalid token",
+          code: @response_codes.unauthenticated
         )
 
       nil ->
         conn
         |> put_status(404)
-        |> json(
-          BaseJSON.show_error(%{
-            code: @response_codes.not_found,
-            error: "diary not found!"
-          })
+        |> render(:show_error,
+          code: @response_codes.not_found,
+          error: "diary not found!"
         )
 
       err ->
         conn
         |> put_status(500)
-        |> json(
-          BaseJSON.show_error(%{
-            error: err,
-            code: @response_codes.server_error
-          })
+        |> render(:show_error,
+          error: err,
+          code: @response_codes.server_error
         )
     end
   end
@@ -199,51 +202,38 @@ defmodule DiaryAPIWeb.DiaryController do
            Diaries.delete_diary(diary) do
       conn
       |> put_status(200)
-      |> json(
-        BaseJSON.show(%{
-          message: "Diary was deleted successfully",
-          code: @response_codes.deleted
-        })
-      )
+      |> render(:delete)
     else
       {:error, :token_expired} ->
         conn
         |> put_status(401)
-        |> json(
-          BaseJSON.show_error(%{
-            error: "Token expired",
-            code: @response_codes.unauthenticated
-          })
+        |> render(:show_error,
+          error: "Token expired",
+          code: @response_codes.unauthenticated
         )
 
       {:error, :invalid_token} ->
         conn
         |> put_status(401)
-        |> json(
-          BaseJSON.show_error(%{
-            error: "Invalid token",
-            code: @response_codes.unauthenticated
-          })
+        |> render(:show_error,
+          error: "Invalid token",
+          code: @response_codes.unauthenticated
         )
 
       nil ->
         conn
         |> put_status(404)
-        |> json(
-          BaseJSON.show_error(%{
-            code: @response_codes.not_found,
-            error: "diary not found!"
-          })
+        |> render(:show_error,
+          code: @response_codes.not_found,
+          error: "diary not found!"
         )
 
       err ->
         conn
         |> put_status(500)
-        |> json(
-          BaseJSON.show_error(%{
-            error: err,
-            code: @response_codes.server_error
-          })
+        |> render(:show_error,
+          error: err,
+          code: @response_codes.server_error
         )
     end
   end

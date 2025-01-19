@@ -7,7 +7,6 @@ defmodule DiaryAPIWeb.UserController do
   alias DiaryAPI.Accounts
   alias DiaryAPI.Accounts.User
   alias DiaryAPI.Guardian
-  alias DiaryAPIWeb.ParentJSON, as: BaseJSON
 
   import DiaryAPIWeb.Utils
 
@@ -25,7 +24,10 @@ defmodule DiaryAPIWeb.UserController do
     if !Map.get(user_params, "password") do
       conn
       |> put_status(400)
-      |> json(%{code: "INVALID INPUT", message: "password is required"})
+      |> render(:show_error, %{
+        code: @response_codes.invalid,
+        error: "password is required"
+      })
     else
       with {:ok, %User{} = user} <- Accounts.create_user(user_params),
            {:ok, token, _claims} <- Guardian.encode_and_sign(user) do
@@ -62,7 +64,7 @@ defmodule DiaryAPIWeb.UserController do
     }
 
     with {:ok, token, _claims} <- Accounts.findOrCreate(user_data) do
-      conn |> json(%{token: token, code: "OAUTH SUCCESS", redirect_uri: "FRONTEND_URI"})
+      conn |> render(:oauth_show, %{token: token, redirect_uri: "FRONTEND_URI"})
     else
       {:code, "METHOD NOT ALLOWED", message: "account cannot authenticate with OAUTH"} ->
         conn
@@ -112,7 +114,7 @@ defmodule DiaryAPIWeb.UserController do
     conn
     |> put_status(400)
     |> render(:show_error, %{
-      code: "INVALID",
+      code: @response_codes.invalid,
       error: "Invalid input, identity and password is required"
     })
   end
@@ -123,12 +125,10 @@ defmodule DiaryAPIWeb.UserController do
       if is_nil(user.password_hash) do
         conn
         |> put_status(403)
-        |> json(
-          BaseJSON.show_error(%{
-            code: @response_codes.forbidden,
-            error: "you were authenticated through an IDP and as such cannot update password"
-          })
-        )
+        |> render(:show_error, %{
+          code: @response_codes.forbidden,
+          error: "you were authenticated through an IDP and as such cannot update password"
+        })
       else
         email = DiaryAPI.ResetPasswordMail.reset_user_password(user, token)
         DiaryAPI.Mailer.deliver(email)
@@ -145,16 +145,18 @@ defmodule DiaryAPIWeb.UserController do
       {:error, "Login error."} ->
         conn
         |> put_status(404)
-        |> json(
-          BaseJSON.show_error(%{error: "user was not found", code: @response_codes.not_found})
-        )
+        |> render(:show_error, %{
+          error: "user was not found",
+          code: @response_codes.not_found
+        })
 
       _ ->
         conn
         |> put_status(500)
-        |> json(
-          BaseJSON.show_error(%{error: "An error occured", code: @response_codes.server_error})
-        )
+        |> render(:show_error, %{
+          error: "An error occured",
+          code: @response_codes.server_error
+        })
     end
   end
 
@@ -175,46 +177,38 @@ defmodule DiaryAPIWeb.UserController do
       {:ok, _user_struct} ->
         conn
         |> put_status(200)
-        |> json(
-          BaseJSON.show(%{
-            data: %{
-              "message" => "Password update was successful"
-            },
-            code: @response_codes.ok
-          })
-        )
+        |> json(%{
+          data: %{
+            "message" => "Password update was successful"
+          },
+          code: @response_codes.ok
+        })
 
       {:error, %Changeset{} = changeset_error} ->
         conn
         |> put_status(400)
-        |> json(
-          BaseJSON.show_error(%{
-            error: translate_errors(changeset_error),
-            code: @response_codes.invalid
-          })
-        )
+        |> render(:show_error, %{
+          error: translate_errors(changeset_error),
+          code: @response_codes.invalid
+        })
 
       _ ->
         conn
         |> put_status(500)
-        |> json(
-          BaseJSON.show_error(%{
-            error: "Internal server error",
-            code: @response_codes.server_error
-          })
-        )
+        |> render(:show_error, %{
+          error: "Internal server error",
+          code: @response_codes.server_error
+        })
     end
   end
 
   def update_password(conn, _user_params) do
     conn
     |> put_status(400)
-    |> json(
-      BaseJSON.show_error(%{
-        error: "Password is required",
-        code: @response_codes.invalid
-      })
-    )
+    |> render(:show_error, %{
+      error: "Password is required",
+      code: @response_codes.invalid
+    })
   end
 
   def show(conn, %{"id" => id}) do

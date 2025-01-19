@@ -51,6 +51,18 @@ defmodule DiaryAPI.Diaries do
     |> Repo.all()
   end
 
+  def get_my_diaries(user_id) do
+    filter_out_soft_delete_col(Diary)
+    |> where([diary], diary.user_id == ^user_id)
+    |> Repo.all()
+  end
+
+  def get_diaries() do
+    filter_out_soft_delete_col(Diary)
+    |> where([diary], not diary.is_private)
+    |> Repo.all()
+  end
+
   def get_diary_by_desc(desc_pattern) do
     filter_out_soft_delete_col(Diary)
     |> where([diary], ilike(diary.description, ^desc_pattern))
