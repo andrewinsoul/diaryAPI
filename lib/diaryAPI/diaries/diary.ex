@@ -10,17 +10,21 @@ defmodule DiaryAPI.Diaries.Diary do
     field :name, :string
     field :description, :string
     field :image, :string
+    field :is_private, :boolean, default: false
     belongs_to :user, User, foreign_key: :user_id, references: :user_id
     has_many :entries, Entry, foreign_key: :entry_id
 
+    field :deleted_at, :naive_datetime
     timestamps(type: :utc_datetime)
   end
 
   @doc false
   def changeset(diary, attrs) do
     diary
-    |> cast(attrs, [:name, :image, :description])
+    |> cast(attrs, [:name, :image, :description, :user_id, :is_private])
     |> validate_required([:name, :description])
     |> unique_constraint(:user_diary_unique, name: :user_diary_unique_index)
+
+    # |> foreign_key_constraint(:user_id)
   end
 end
