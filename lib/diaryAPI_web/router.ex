@@ -28,6 +28,7 @@ defmodule DiaryAPIWeb.Router do
   scope "/api/v1", DiaryAPIWeb do
     pipe_through [:api, :jwt_authenticated]
     put "/update/password", UserController, :update_password
+    post "/logout", UserController, :logout
     post "/add/diary", DiaryController, :create
     patch "/update/diary/:id", DiaryController, :update
     delete "/delete/diary/:id", DiaryController, :delete

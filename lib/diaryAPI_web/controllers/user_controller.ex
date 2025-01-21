@@ -2,13 +2,14 @@ defmodule DiaryAPIWeb.UserController do
   use DiaryAPIWeb, :controller
   plug Ueberauth
 
+  alias DiaryAPI.RevokedToken.Token
   alias DiaryAPIWeb.ResponseCodes
   alias Ecto.Changeset
   alias DiaryAPI.Accounts
   alias DiaryAPI.Accounts.User
   alias DiaryAPI.Guardian
 
-  import DiaryAPIWeb.Utils
+  import DiaryAPIWeb.Utils, only: [translate_errors: 1, revoke_token: 1, get_token: 1]
 
   action_fallback DiaryAPIWeb.FallbackController
 
@@ -117,6 +118,29 @@ defmodule DiaryAPIWeb.UserController do
       code: @response_codes.invalid,
       error: "Invalid input, identity and password is required"
     })
+  end
+
+  def logout(conn, _) do
+    token = get_token(conn)
+
+    case revoke_token(token) do
+      {:ok, %Token{}} ->
+        conn
+        |> json(%{
+          data: %{
+            "message" => "logout operation was successful"
+          },
+          code: @response_codes.ok
+        })
+
+      _ ->
+        conn
+        |> put_status(401)
+        |> render(:show_error, %{
+          code: @response_codes.unauthorized,
+          error: "token is invalid"
+        })
+    end
   end
 
   def send_reset_password_mail(conn, %{"identity" => identity}) when is_binary(identity) do
