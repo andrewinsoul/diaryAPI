@@ -31,6 +31,8 @@ jobs:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           GIGALIXIR_APP: diary-api
           MIGRATIONS: true
+        env:
+          BRANCH_NAME: main
 
       - name: Run Migrations
         env:
