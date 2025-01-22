@@ -10,32 +10,31 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    - name: Set up Elixir
-      uses: erlef/setup-beam@v1
-      with:
-        elixir-version: '1.16.1'
-        otp-version: '26'
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: "1.16.1"
+          otp-version: "26"
 
-    - name: Install Dependencies
-      run: |
-        mix deps.get
+      - name: Install Dependencies
+        run: |
+          mix deps.get
 
-    - name: Deploy to Gigalixir
-      env:
-        GIGALIXIR_USERNAME: ${{ secrets.GIGALIXIR_USERNAME }}
-        GIGALIXIR_PASSWORD: ${{ secrets.GIGALIXIR_PASSWORD }}
-      run: |
-        echo "$GIGALIXIR_PASSWORD" | gigalixir login --username $GIGALIXIR_USERNAME --password-stdin
-        git remote add gigalixir https://git.gigalixir.com/diary-api.git
-        git push gigalixir HEAD:refs/heads/main --force
+      - name: Deploy to Gigalixir
+        uses: mhanberg/gigalixir-action@v0.6.1
+        with:
+          GIGALIXIR_USERNAME: ${{ secrets.GIGALIXIR_USERNAME }}
+          GIGALIXIR_PASSWORD: ${{ secrets.GIGALIXIR_PASSWORD }}
+          GIGALIXIR_APP: diary-api
+          MIGRATIONS: true
 
-    - name: Run Migrations
-      env:
-        MIX_ENV: prod
-        DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        SECRET_KEY_BASE: ${{ secrets.SECRET_KEY_BASE }}
-      run: |
-        gigalixir run mix ecto.migrate
+      - name: Run Migrations
+        env:
+          MIX_ENV: prod
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SECRET_KEY_BASE: ${{ secrets.SECRET_KEY_BASE }}
+        run: |
+          gigalixir run mix ecto.migrate
