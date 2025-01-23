@@ -13,8 +13,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Unshallow git origin
-        run: git fetch --unshallow origin
+      - name: Unshallow git origin main branch
+        run: git fetch --unshallow origin main
 
       - name: Setup Python # Gigalixir is written in python
         uses: actions/setup-python@v2

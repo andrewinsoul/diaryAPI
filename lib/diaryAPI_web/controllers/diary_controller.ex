@@ -78,6 +78,7 @@ defmodule DiaryAPIWeb.DiaryController do
     render(conn, :show, diary: diary)
   end
 
+  @spec fetch_my_diaries(Plug.Conn.t(), any()) :: Plug.Conn.t()
   def fetch_my_diaries(conn, _params) do
     token = get_token(conn)
 
@@ -87,11 +88,27 @@ defmodule DiaryAPIWeb.DiaryController do
       |> put_status(200)
       |> render(:index, diaries: diaries)
     else
-      err ->
+      {:error, :token_expired} ->
+        conn
+        |> put_status(401)
+        |> render(:show_error,
+          error: "Token expired",
+          code: @response_codes.unauthenticated
+        )
+
+      {:error, :invalid_token} ->
+        conn
+        |> put_status(401)
+        |> render(:show_error,
+          error: "Invalid token",
+          code: @response_codes.unauthenticated
+        )
+
+      _ ->
         conn
         |> put_status(500)
         |> render(:show_error,
-          error: err,
+          error: "A server error happened",
           code: @response_codes.server_error
         )
     end
