@@ -35,7 +35,7 @@ jobs:
         run: |
           gigalixir login -e "${{ secrets.GIGALIXIR_USERNAME }}" -y -p "${{ secrets.GIGALIXIR_PASSWORD }}"
           gigalixir git:remote diary-api
-          git push -f gigalixir HEAD:refs/heads/main
+          git push -f gigalixir HEAD:refs/heads/main --force
 
       - name: Run Migrations
         env:
