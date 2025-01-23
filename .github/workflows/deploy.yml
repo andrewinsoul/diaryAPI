@@ -13,6 +13,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Setup Python # Gigalixir is written in python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.8"
+
+      - name: Install Gigalixir
+        run: |
+          sudo pip3 install gigalixir --ignore-installed six
+
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
         with:
@@ -20,19 +29,13 @@ jobs:
           otp-version: "26"
 
       - name: Install Dependencies
-        run: |
-          mix deps.get
+        run: mix deps.get
 
       - name: Deploy to Gigalixir
-        uses: mhanberg/gigalixir-action@v0.6.1
-        with:
-          GIGALIXIR_USERNAME: ${{ secrets.GIGALIXIR_USERNAME }}
-          GIGALIXIR_PASSWORD: ${{ secrets.GIGALIXIR_PASSWORD }}
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          GIGALIXIR_APP: diary-api
-          MIGRATIONS: true
-        env:
-          BRANCH_NAME: main
+        run: |
+          gigalixir login -e "${{ secrets.GIGALIXIR_USERNAME }}" -y -p "${{ secrets.GIGALIXIR_PASSWORD }}"
+          gigalixir git:remote diary-api
+          git push -f gigalixir HEAD:refs/heads/main
 
       - name: Run Migrations
         env:
