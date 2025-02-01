@@ -23,6 +23,7 @@ defmodule DiaryAPIWeb.Router do
     post "/login", UserController, :login
     post "/send/reset_password/code", UserController, :send_reset_password_mail
     get "/diaries", DiaryController, :fetch_diaries
+    get "/search/diaries", DiaryController, :search_diaries
   end
 
   scope "/api/v1", DiaryAPIWeb do
@@ -33,6 +34,7 @@ defmodule DiaryAPIWeb.Router do
     patch "/update/diary/:id", DiaryController, :update
     delete "/delete/diary/:id", DiaryController, :delete
     get "/my/diaries", DiaryController, :fetch_my_diaries
+    get "/search/my/diaries", DiaryController, :search_my_diaries
   end
 
   # Enable Swoosh mailbox preview in development

@@ -1,7 +1,7 @@
 defmodule DiaryAPIWeb.DiaryController do
   use DiaryAPIWeb, :controller
 
-  import DiaryAPIWeb.Utils, only: [get_token: 1, decode_token: 1]
+  import DiaryAPIWeb.Utils, only: [get_token: 1, decode_token: 1, max_limit: 1]
   alias Ecto.Changeset
   alias DiaryAPI.Diaries
   alias DiaryAPI.Diaries.Diary
@@ -79,14 +79,22 @@ defmodule DiaryAPIWeb.DiaryController do
   end
 
   @spec fetch_my_diaries(Plug.Conn.t(), any()) :: Plug.Conn.t()
-  def fetch_my_diaries(conn, _params) do
+  def fetch_my_diaries(conn, params) do
     token = get_token(conn)
+    limit = max_limit(Map.get(params, "limit", "50"))
+    page = Map.get(params, "page", "1")
 
     with {:ok, claims} <- decode_token(token),
-         diaries <- Diaries.get_my_diaries(claims["sub"]) do
+         diaries when is_list(diaries) <-
+           Diaries.get_my_diaries(
+             String.to_integer(claims["sub"]),
+             String.to_integer(limit),
+             String.to_integer(page)
+           ),
+         {:ok, total_count} <- Diaries.count_my_diaries(claims["sub"]) do
       conn
       |> put_status(200)
-      |> render(:index, diaries: diaries)
+      |> render(:index, diaries: diaries, limit: limit, page: page, total: total_count)
     else
       {:error, :token_expired} ->
         conn
@@ -114,20 +122,122 @@ defmodule DiaryAPIWeb.DiaryController do
     end
   end
 
-  def fetch_diaries(conn, _params) do
-    diaries = Diaries.get_diaries()
+  @spec fetch_diaries(any(), map()) :: Plug.Conn.t()
+  def fetch_diaries(conn, params) do
+    limit = max_limit(Map.get(params, "limit", "50"))
+    page = Map.get(params, "page", "1")
 
-    if diaries do
+    with diaries when is_list(diaries) <-
+           Diaries.get_diaries(String.to_integer(limit), String.to_integer(page)),
+         {:ok, diaries_count} <- Diaries.count_diaries() do
       conn
       |> put_status(200)
-      |> render(:index, diaries: diaries)
+      |> render(:index, diaries: diaries, limit: limit, page: page, total: diaries_count)
     else
+      _ ->
+        conn
+        |> put_status(500)
+        |> render(:show_error,
+          error: "can not fetch diaries at this moment, try again!",
+          code: @response_codes.server_error
+        )
+    end
+  end
+
+  @spec search_my_diaries(Plug.Conn.t(), any()) :: Plug.Conn.t()
+  def search_my_diaries(conn, params) do
+    token = get_token(conn)
+    limit = max_limit(Map.get(params, "limit", "50"))
+    page = Map.get(params, "page", "1")
+    name = Map.get(params, "name", nil)
+    desc = Map.get(params, "desc", nil)
+
+    with {:ok, claims} <- decode_token(token),
+         diaries when is_list(diaries) <-
+           Diaries.search_my_diaries(
+             %{
+               "name" => name,
+               "desc" => desc,
+               "limit" => String.to_integer(limit),
+               "page" => String.to_integer(page)
+             },
+             String.to_integer(claims["sub"])
+           ),
+         {:ok, total_count} <-
+           Diaries.count_search_my_diaries(%{"desc" => desc, "name" => name}, claims["sub"]) do
       conn
-      |> put_status(500)
-      |> render(:show_error,
-        error: "can not fetch diaries at this moment, try again!",
-        code: @response_codes.server_error
-      )
+      |> put_status(200)
+      |> render(:index, diaries: diaries, limit: limit, page: page, total: total_count)
+    else
+      {:error, :token_expired} ->
+        conn
+        |> put_status(401)
+        |> render(:show_error,
+          error: "Token expired",
+          code: @response_codes.unauthenticated
+        )
+
+      {:error, :invalid_token} ->
+        conn
+        |> put_status(401)
+        |> render(:show_error,
+          error: "Invalid token",
+          code: @response_codes.unauthenticated
+        )
+
+      _ ->
+        conn
+        |> put_status(500)
+        |> render(:show_error,
+          error: "A server error happened",
+          code: @response_codes.server_error
+        )
+    end
+  end
+
+  @spec search_diaries(Plug.Conn.t(), any()) :: Plug.Conn.t()
+  def search_diaries(conn, params) do
+    limit = max_limit(Map.get(params, "limit", "50"))
+    page = Map.get(params, "page", "1")
+    name = Map.get(params, "name", nil)
+    desc = Map.get(params, "desc", nil)
+
+    with diaries when is_list(diaries) <-
+           Diaries.search_diaries(%{
+             "name" => name,
+             "desc" => desc,
+             "limit" => String.to_integer(limit),
+             "page" => String.to_integer(page)
+           }),
+         {:ok, total_count} <-
+           Diaries.count_search_diaries(%{"desc" => desc, "name" => name}) do
+      conn
+      |> put_status(200)
+      |> render(:index, diaries: diaries, limit: limit, page: page, total: total_count)
+    else
+      {:error, :token_expired} ->
+        conn
+        |> put_status(401)
+        |> render(:show_error,
+          error: "Token expired",
+          code: @response_codes.unauthenticated
+        )
+
+      {:error, :invalid_token} ->
+        conn
+        |> put_status(401)
+        |> render(:show_error,
+          error: "Invalid token",
+          code: @response_codes.unauthenticated
+        )
+
+      _ ->
+        conn
+        |> put_status(500)
+        |> render(:show_error,
+          error: "A server error happened",
+          code: @response_codes.server_error
+        )
     end
   end
 

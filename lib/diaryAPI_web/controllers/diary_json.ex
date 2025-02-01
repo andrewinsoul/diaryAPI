@@ -8,8 +8,23 @@ defmodule DiaryAPIWeb.DiaryJSON do
   @doc """
   Renders a list of diaries.
   """
-  def index(%{diaries: diaries}) do
-    %{code: @response_codes.ok, data: for(diary <- diaries, do: data(diary))}
+  def index(%{diaries: diaries, limit: limit, page: page, total: total}) do
+    has_prev = if String.to_integer(page) > 1, do: true, else: false
+
+    has_next =
+      if String.to_integer(page) < ceil(total / String.to_integer(limit)), do: true, else: false
+
+    %{
+      code: @response_codes.ok,
+      data: for(diary <- diaries, do: data(diary)),
+      meta: %{
+        limit: limit,
+        page: page,
+        has_prev: has_prev,
+        has_next: has_next,
+        total: total
+      }
+    }
   end
 
   @doc """
@@ -27,7 +42,7 @@ defmodule DiaryAPIWeb.DiaryJSON do
 
   # end
 
-  def delete() do
+  def delete(_) do
     %{code: @response_codes.deleted, data: %{message: "Diary was deleted successfully"}}
   end
 

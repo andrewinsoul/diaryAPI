@@ -87,8 +87,6 @@ defmodule DiaryAPIWeb.UserController do
   end
 
   def callback(conn, _user_params) do
-    IO.inspect(conn, label: "Error in conn")
-
     conn
     |> put_status(401)
     |> render(:show_error, %{
