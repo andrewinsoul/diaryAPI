@@ -4,7 +4,7 @@ defmodule DiaryAPI.Diaries do
   """
 
   import Ecto.Query, warn: false
-  import DiaryAPIWeb.Utils, only: [filter_out_soft_delete_col: 1]
+  alias DiaryAPIWeb.Filter
   alias DiaryAPI.Repo
 
   alias DiaryAPI.Diaries.Diary
@@ -39,34 +39,263 @@ defmodule DiaryAPI.Diaries do
   def get_diary(id), do: Repo.get(Diary, id)
 
   def get_my_diary_by_id(id, user_id) do
-    filter_out_soft_delete_col(Diary)
+    Filter.filter_out_soft_delete_col(Diary)
     |> where([diary], diary.user_id == ^user_id)
     |> where([diary], diary.diary_id == ^id)
     |> Repo.one()
   end
 
   def get_diary_by_name(name) do
-    filter_out_soft_delete_col(Diary)
+    Filter.filter_out_soft_delete_col(Diary)
     |> where([diary], diary.name == ^name)
     |> Repo.all()
   end
 
-  def get_my_diaries(user_id) do
-    filter_out_soft_delete_col(Diary)
-    |> where([diary], diary.user_id == ^user_id)
+  def get_my_diaries(user_id, limit, page) do
+    offset = (page - 1) * limit
+
+    Filter.filter_out_soft_delete_col(Diary)
+    |> Filter.paginate(%{"user_id" => user_id}, limit, offset)
     |> Repo.all()
   end
 
-  def get_diaries() do
-    filter_out_soft_delete_col(Diary)
-    |> where([diary], not diary.is_private)
+  def count_my_diaries(user_id) do
+    case Filter.count_util(
+           Filter.filter_out_soft_delete_col(Diary),
+           %{"user_id" => user_id},
+           :diary_id
+         )
+         |> Repo.one() do
+      total_count when is_integer(total_count) ->
+        {:ok, total_count}
+
+      _ ->
+        {:error}
+    end
+  end
+
+  def get_diaries(limit, page) do
+    offset = (page - 1) * limit
+
+    Filter.filter_out_soft_delete_col(Diary)
+    |> Filter.paginate(%{"is_private" => false}, limit, offset)
     |> Repo.all()
   end
 
-  def get_diary_by_desc(desc_pattern) do
-    filter_out_soft_delete_col(Diary)
-    |> where([diary], ilike(diary.description, ^desc_pattern))
-    |> Repo.all()
+  def count_diaries() do
+    case Filter.count_util(
+           Filter.filter_out_soft_delete_col(Diary),
+           %{"is_private" => false},
+           :diary_id
+         )
+         |> Repo.one() do
+      total_count when is_integer(total_count) ->
+        {:ok, total_count}
+
+      _ ->
+        {:error}
+    end
+  end
+
+  def search_diaries(params) do
+    limit = params["limit"]
+    page = params["page"]
+
+    model =
+      Filter.filter_out_soft_delete_col(Diary)
+      |> where([diary], diary.is_private == false)
+
+    cond do
+      !is_nil(params["desc"]) and !is_nil(params["name"]) ->
+        model
+        |> Filter.paginate(
+          %{
+            "name" => params["name"],
+            "description" => params["desc"]
+          },
+          limit,
+          page
+        )
+        |> Repo.all()
+
+      !is_nil(params["desc"]) ->
+        model
+        |> Filter.paginate(
+          %{
+            "description" => params["desc"]
+          },
+          limit,
+          page
+        )
+        |> Repo.all()
+
+      !is_nil(params["name"]) ->
+        model
+        |> Filter.paginate(
+          %{
+            "name" => params["name"],
+            "description" => params["desc"]
+          },
+          limit,
+          page
+        )
+        |> Repo.all()
+
+      true ->
+        get_diaries(limit, page)
+    end
+  end
+
+  def count_search_diaries(params) do
+    model =
+      Filter.filter_out_soft_delete_col(Diary)
+      |> where([diary], diary.is_private == false)
+
+    cond do
+      !is_nil(params["desc"]) and !is_nil(params["name"]) ->
+        count =
+          Filter.count_util(
+            model,
+            %{
+              "name" => params["name"],
+              "description" => params["desc"]
+            },
+            :diary_id
+          )
+          |> Repo.one()
+
+        {:ok, count}
+
+      !is_nil(params["desc"]) ->
+        count =
+          Filter.count_util(
+            model,
+            %{
+              "description" => params["desc"]
+            },
+            :diary_id
+          )
+          |> Repo.one()
+
+        {:ok, count}
+
+      !is_nil(params["name"]) ->
+        count =
+          Filter.count_util(
+            model,
+            %{
+              "name" => params["name"],
+              "description" => params["desc"]
+            },
+            :diary_id
+          )
+          |> Repo.one()
+
+        {:ok, count}
+
+      true ->
+        count_diaries()
+    end
+  end
+
+  def search_my_diaries(params, user_id) do
+    limit = params["limit"]
+    page = params["page"]
+
+    model =
+      Filter.filter_out_soft_delete_col(Diary)
+      |> where([diary], diary.user_id == ^user_id)
+
+    cond do
+      !is_nil(params["desc"]) and !is_nil(params["name"]) ->
+        model
+        |> Filter.paginate(
+          %{
+            "name" => params["name"],
+            "description" => params["desc"]
+          },
+          limit,
+          page
+        )
+        |> Repo.all()
+
+      !is_nil(params["desc"]) ->
+        model
+        |> Filter.paginate(
+          %{
+            "description" => params["desc"]
+          },
+          limit,
+          page
+        )
+        |> Repo.all()
+
+      !is_nil(params["name"]) ->
+        model
+        |> Filter.paginate(
+          %{
+            "name" => params["name"]
+          },
+          limit,
+          page
+        )
+        |> Repo.all()
+
+      true ->
+        get_my_diaries(user_id, limit, page)
+    end
+  end
+
+  def count_search_my_diaries(params, user_id) do
+    model =
+      Filter.filter_out_soft_delete_col(Diary)
+      |> where([diary], diary.user_id == ^user_id)
+
+    cond do
+      !is_nil(params["desc"]) and !is_nil(params["name"]) ->
+        count =
+          Filter.count_util(
+            model,
+            %{
+              "name" => params["name"],
+              "description" => params["desc"]
+            },
+            :diary_id
+          )
+          |> Repo.one()
+
+        {:ok, count}
+
+      !is_nil(params["desc"]) ->
+        count =
+          Filter.count_util(
+            model,
+            %{
+              "description" => params["desc"]
+            },
+            :diary_id
+          )
+          |> Repo.one()
+
+        {:ok, count}
+
+      !is_nil(params["name"]) ->
+        count =
+          Filter.count_util(
+            model,
+            %{
+              "name" => params["name"],
+              "description" => params["desc"]
+            },
+            :diary_id
+          )
+          |> Repo.one()
+
+        {:ok, count}
+
+      true ->
+        count_my_diaries(user_id)
+    end
   end
 
   @doc """

@@ -3,7 +3,6 @@ import Ecto.Query, only: [where: 3], warn: false
 defmodule DiaryAPIWeb.Utils do
   alias DiaryAPI.RevokedToken.Token
   alias DiaryAPI.RevokedTokens
-  alias DiaryAPI.Diaries.Diary
 
   def translate_errors(changeset) do
     Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
@@ -48,8 +47,10 @@ defmodule DiaryAPIWeb.Utils do
     end
   end
 
-  @spec filter_out_soft_delete_col(Diary) :: Ecto.Query.t()
-  def filter_out_soft_delete_col(query) do
-    query |> where([q], is_nil(q.deleted_at))
+  def max_limit(limit) do
+    cond do
+      String.to_integer(limit) > 50 -> "50"
+      true -> "#{limit}"
+    end
   end
 end
