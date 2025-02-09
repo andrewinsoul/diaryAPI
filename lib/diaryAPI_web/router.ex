@@ -45,4 +45,9 @@ defmodule DiaryAPIWeb.Router do
       forward "/mailbox", Plug.Swoosh.MailboxPreview
     end
   end
+
+  scope "/", DiaryAPIWeb do
+    pipe_through :api
+    match :*, "/*path", CatchAllController, :match_invalid_routes
+  end
 end
